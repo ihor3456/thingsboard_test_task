@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Star Wars Characters Table</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+        background-color: #f8f9fa;
+        color: #343a40;
+      }
+      h1 {
+        text-align: center;
+        margin-bottom: 20px;
+        color: #007bff;
+      }
+      input[type="text"] {
+        margin-bottom: 20px;
+        padding: 10px;
+        width: 100%;
+        border: 1px solid #ced4da;
+        border-radius: 5px;
+        font-size: 16px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      }
+      th,
+      td {
+        border: 1px solid #dee2e6;
+        padding: 12px;
+        text-align: left;
+      }
+      th {
+        background-color: #007bff;
+        color: white;
+      }
+      tr:nth-child(even) {
+        background-color: #f2f2f2;
+      }
+      button.homeworld-btn {
+        background-color: #28a745;
+        color: white;
+        border: none;
+        padding: 8px 12px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+      }
+      button.homeworld-btn:hover {
+        background-color: #218838;
+      }
+      .popover {
+        position: absolute;
+        background: #ffffff;
+        border: 1px solid #ced4da;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        padding: 10px;
+        border-radius: 5px;
+        display: none;
+        z-index: 10;
+      }
+      .popover ul {
+        list-style-type: none;
+        padding: 0;
+        margin: 0;
+      }
+      .popover ul li {
+        margin: 5px 0;
+      }
+      @media (max-width: 600px) {
+        table {
+          font-size: 14px;
+        }
+        th,
+        td {
+          padding: 8px;
+        }
+      }
+      @media (max-width: 400px) {
+        table {
+          font-size: 12px;
+        }
+        th,
+        td {
+          padding: 6px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Star Wars Characters Table</h1>
+    <input type="text" id="search" placeholder="Search by name..." />
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Gender</th>
+          <th>Birth Year</th>
+          <th>Homeworld</th>
+        </tr>
+      </thead>
+      <tbody id="character-table">
+        <!-- Dynamic content will be inserted here -->
+      </tbody>
+    </table>
+
+    <div id="popover" class="popover"></div>
+
+    <script>
+      async function fetchData(url) {
+        const response = await fetch(url);
+        return response.json();
+      }
+
+      async function loadCharacters() {
+        const data = await fetchData("https://swapi.dev/api/people");
+        const randomCharacters = data.results
+          .sort(() => 0.5 - Math.random())
+          .slice(0, 5);
+
+        const tableBody = document.getElementById("character-table");
+        tableBody.innerHTML = "";
+
+        for (const character of randomCharacters) {
+          const homeworldData = await fetchData(character.homeworld);
+
+          const row = document.createElement("tr");
+          row.innerHTML = `
+                    <td>${character.name}</td>
+                    <td>${character.gender}</td>
+                    <td>${character.birth_year}</td>
+                    <td>
+                        <button class="homeworld-btn" data-homeworld='${JSON.stringify(
+                          homeworldData
+                        )}'>View Details</button>
+                    </td>
+                `;
+          tableBody.appendChild(row);
+        }
+      }
+
+      document
+        .getElementById("character-table")
+        .addEventListener("click", function (event) {
+          if (event.target.classList.contains("homeworld-btn")) {
+            const homeworld = JSON.parse(
+              event.target.getAttribute("data-homeworld")
+            );
+
+            const popover = document.getElementById("popover");
+            popover.innerHTML = `
+                    <ul>
+                        <li><strong>Name:</strong> ${homeworld.name}</li>
+                        <li><strong>Climate:</strong> ${homeworld.climate}</li>
+                        <li><strong>Terrain:</strong> ${homeworld.terrain}</li>
+                        <li><strong>Population:</strong> ${homeworld.population}</li>
+                    </ul>
+                `;
+            popover.style.display = "block";
+            popover.style.top = `${event.clientY + window.scrollY}px`;
+            popover.style.left = `${event.clientX}px`;
+          }
+        });
+
+      document.addEventListener("click", function (event) {
+        const popover = document.getElementById("popover");
+        if (!event.target.classList.contains("homeworld-btn")) {
+          popover.style.display = "none";
+        }
+      });
+
+      document
+        .getElementById("search")
+        .addEventListener("input", function (event) {
+          const searchTerm = event.target.value.toLowerCase();
+          const rows = document.querySelectorAll("#character-table tr");
+          rows.forEach((row) => {
+            const name = row.querySelector("td").textContent.toLowerCase();
+            row.style.display = name.includes(searchTerm) ? "" : "none";
+          });
+        });
+
+      loadCharacters();
+    </script>
+  </body>
+</html>
